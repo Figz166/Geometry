@@ -98,12 +98,10 @@
 		<script type="text/javascript">
 			window.__eaglerPerfEnabled = window.location.search.indexOf("perfdebug") >= 0;
 			window.__eaglerPerfEnabled = window.location.search.indexOf("perfdebug") >= 0;
-			// Local diagnostic A/B controls.
+			// Bound retained chunk memory by default; ?chunkunload=normal opts out.
 			(function () {
 				var params = new URLSearchParams(window.location.search);
-				var lowPower = (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4)
-					|| (navigator.deviceMemory && navigator.deviceMemory <= 4);
-				window.__eaglerChunkUnloadHardCap = params.get("chunkunload") === "capped" || lowPower;
+				window.__eaglerChunkUnloadHardCap = params.get("chunkunload") !== "normal";
 			})();
 			// Crash recovery.
 			(function () {
@@ -393,15 +391,12 @@
 			window.addEventListener("touchstart", resumeAll, true);
 		})();
 
-		// Wasm-GC workers have separate Java heaps. Low-end devices benefit from a
-		// slightly more conservative default so chunk load spikes don't hammer the UI.
+		// Wasm-GC workers have separate Java heaps; cap the pool to limit memory and
+		// CPU spikes during chunk generation. ?meshworkers=N overrides the default.
 		function chooseMeshWorkerCount() {
 			var match = /[?&]meshworkers=([1-4])(?:&|$)/.exec(window.location.search);
 			if (match) return Number(match[1]);
-			var cores = navigator.hardwareConcurrency || 4;
-			var memory = navigator.deviceMemory || 0;
-			if (cores <= 4 || memory <= 4) return 2;
-			return -1;
+			return 2;
 		}
 		// The hosted release may point this at a signed bundle on a separate
 		// large-file origin. An empty value keeps the preview download disabled.
